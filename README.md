@@ -4,9 +4,10 @@ Enterprise Linux Atomic Operating System for RHEL 10 and compatible distribution
 
 ## Copyright
 
-Copyright (c) 2025-Present, Ross W.D. Cameron 
+Copyright (c) 2025-Present, Ross W.D. Cameron \
                             <rwd.cameron@prometheus-systems.co.za>  
-Copyright (c) 2025-Present, Prometheus Systems 
+
+Copyright (c) 2025-Present, Prometheus Systems \
                             <https://www.prometheus-systems.co.za/>
 
 ## License
