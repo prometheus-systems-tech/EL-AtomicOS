@@ -196,15 +196,15 @@ Open browser to: `https://your-hostname:9090`
 │            User Applications            │
 ├─────────────────────────────────────────┤
 │              Containers                 │
-│        (Podman/Docker/Buildah)         │
+│        (Podman/Docker/Buildah)          │
 ├─────────────────────────────────────────┤
 │            Container Runtime            │
 │             (crun/runc)                 │
 ├─────────────────────────────────────────┤
 │          EL AtomicOS Services           │
-│       (Cockpit, rpm-ostree)            │
+│       (Cockpit, rpm-ostree)             │
 ├─────────────────────────────────────────┤
-│         Enterprise Linux 10            │
+│         Enterprise Linux 10             │
 │             (Kernel/Base)               │
 └─────────────────────────────────────────┘
 ```
