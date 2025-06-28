@@ -2,7 +2,7 @@
 EL AtomicOS 10 Installation and User Manual
 
 Copyright (c) 2025-Present, Ross W.D. Cameron <rwd.cameron@prometheus-systems.co.za>
-Copyright (c) 2025-Present, Prometheus Systems <prometheus-systems.co.za>
+Copyright (c) 2025-Present, Prometheus Systems <https://prometheus-systems.co.za/>
 
 This documentation is part of EL AtomicOS 10 and is licensed under the GNU General Public License v2.
 See the LICENSE file for details.

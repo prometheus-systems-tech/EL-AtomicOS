@@ -1,7 +1,7 @@
 # EL AtomicOS 10 Kickstart Configuration
 #
 # Copyright (c) 2025-Present, Ross W.D. Cameron <rwd.cameron@prometheus-systems.co.za>
-# Copyright (c) 2025-Present, Prometheus Systems <prometheus-systems.co.za>
+# Copyright (c) 2025-Present, Prometheus Systems <https://prometheus-systems.co.za/>
 #
 # This file is part of EL AtomicOS 10 and is licensed under the GNU General Public License v2.
 # See the LICENSE file for details.
@@ -125,10 +125,10 @@ VERSION_ID="10"
 PRETTY_NAME="EL AtomicOS 10 (Enterprise Linux Atomic Operating System)"
 ANSI_COLOR="0;34"
 CPE_NAME="cpe:/o:enterprise:el_atomicos:10"
-HOME_URL="https://github.com/rwdcameron/EL-AtomicOS"
-DOCUMENTATION_URL="https://github.com/rwdcameron/EL-AtomicOS/wiki"
-SUPPORT_URL="https://github.com/rwdcameron/EL-AtomicOS/issues"
-BUG_REPORT_URL="https://github.com/rwdcameron/EL-AtomicOS/issues"
+HOME_URL="https://github.com/prometheus-systems-tech/EL-AtomicOS"
+DOCUMENTATION_URL="https://github.com/prometheus-systems-tech/EL-AtomicOS/wiki"
+SUPPORT_URL="https://github.com/prometheus-systems-tech/EL-AtomicOS/issues"
+BUG_REPORT_URL="https://github.com/prometheus-systems-tech/EL-AtomicOS/issues"
 LOGO="el-atomicos"
 EOF
 
@@ -244,7 +244,7 @@ Key Features:
 - Optimized for cloud and edge deployments
 
 For more information, visit:
-https://github.com/rwdcameron/EL-AtomicOS
+https://github.com/prometheus-systems-tech/EL-AtomicOS
 EOF
 
 # Configure sudo for atomicos user
