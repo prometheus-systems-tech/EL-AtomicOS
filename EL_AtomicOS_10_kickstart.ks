@@ -110,11 +110,15 @@ lsof
 psmisc
 %end
 
-# Services configuration
-%services --enabled=NetworkManager,chronyd,sshd,cockpit.socket,podman.socket,systemd-resolved --disabled=postfix
-
 # Post-installation script
 %post --log=/var/log/atomicos-kickstart.log
+systemctl enable NetworkManager
+systemctl enable chronyd
+systemctl enable sshd
+systemctl enable cockpit.socket
+systemctl enable podman.socket
+systemctl enable systemd-resolved
+systemctl disable postfix
 
 # Create EL AtomicOS branding
 cat > /etc/os-release << 'EOF'
