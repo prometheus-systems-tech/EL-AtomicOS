@@ -82,7 +82,7 @@ EL AtomicOS 10 is compatible with the following Enterprise Linux 10 distribution
 
 Download the EL AtomicOS 10 kickstart file:
 ```bash
-curl -O https://raw.githubusercontent.com/rwdcameron/EL-AtomicOS/main/EL_AtomicOS_10_kickstart.ks
+curl -O https://raw.githubusercontent.com/prometheus-systems-tech/EL-AtomicOS/main/EL_AtomicOS_10_kickstart.ks
 ```
 
 ### 2. Boot Installation
@@ -430,8 +430,8 @@ reboot
 
 ### Support Resources
 
-- GitHub Issues: `https://github.com/rwdcameron/EL-AtomicOS/issues`
-- Documentation: `https://github.com/rwdcameron/EL-AtomicOS/wiki`
+- GitHub Issues: `https://github.com/prometheus-systems-tech/EL-AtomicOS/issues`
+- Documentation: `https://github.com/prometheus-systems-tech/EL-AtomicOS/wiki`
 - Community Forum: [Enterprise Linux Community]
 - Enterprise Support: Contact your EL vendor
 
@@ -484,4 +484,4 @@ sudo vi /etc/systemd/journald.conf
 Compatible with RHEL 10, AlmaLinux 10, Rocky Linux 10, CentOS Stream 10, and Oracle Linux 10
 
 For the latest documentation and updates, visit:  
-`https://github.com/rwdcameron/EL-AtomicOS`
+`https://github.com/prometheus-systems-tech/EL-AtomicOS`
