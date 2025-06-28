@@ -32,7 +32,7 @@ logvol /home --fstype=xfs --name=home --vgname=atomicos --size=5120
 logvol /tmp --fstype=xfs --name=tmp --vgname=atomicos --size=2048
 logvol swap --name=swap --vgname=atomicos --size=4096
 
-%packages --nobase --excludedocs
+%packages --excludedocs
 @core
 @standard
 @hardware-support
@@ -184,7 +184,6 @@ cat > /etc/motd << 'EOF'
 
 EOF
 
-# Optional: remount / as read-only at boot (emulating MicroOS)
 echo 'mount -o remount,ro /' >> /etc/rc.local
 chmod +x /etc/rc.local
 
