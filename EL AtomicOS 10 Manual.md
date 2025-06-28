@@ -90,13 +90,13 @@ curl -O https://raw.githubusercontent.com/prometheus-systems-tech/EL-AtomicOS/ma
 **For Network Installation:**
 ```bash
 # At boot prompt, add kickstart parameter
-linux ks=http://your-server/EL_AtomicOS_10_kickstart.ks
+linux inst.ks=http://your-server/EL_AtomicOS_10_kickstart.ks
 ```
 
 **For Local Installation:**
 ```bash
 # Copy kickstart to USB/CD and reference it
-linux ks=hd:sdb1:/EL_AtomicOS_10_kickstart.ks
+linux inst.ks=hd:sdb1:/EL_AtomicOS_10_kickstart.ks
 ```
 
 ### 3. Customize Installation
