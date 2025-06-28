@@ -1,5 +1,4 @@
 # EL AtomicOS 10 Kickstart Configuration
-install
 text
 reboot
 
