@@ -108,8 +108,7 @@ Edit the kickstart file before installation:
 network --hostname=your-hostname
 
 # Update passwords (generate with openssl passwd -6)
-rootpw --iscrypted $6$your_encrypted_password
-user --password=$6$your_encrypted_password
+user --name=atomic --password=atomic --plaintext --gecos="EL AtomicOS Admin" --groups=wheel,docker
 
 # Modify partitioning if needed
 logvol / --size=50240  # Increase root partition
