@@ -132,10 +132,10 @@ The installation will:
 
 ```bash
 # SSH access (preferred)
-ssh atomicos@your-hostname
+ssh atomic@your-hostname
 
 # Console login
-Username: atomicos
+Username: atomic
 Password: [your-configured-password]
 ```
 
@@ -170,7 +170,7 @@ nmcli con up "System eth0"
 ### 4. Access Web Interface
 
 Open browser to: `https://your-hostname:9090`
-- Login with `atomicos` user credentials
+- Login with `atomic` user credentials
 - Accept self-signed certificate
 - Explore system overview and container management
 
@@ -316,7 +316,7 @@ rpm-ostree search package-name
 ### Accessing Cockpit
 
 1. Open browser: `https://hostname:9090`
-2. Login with `atomicos` user
+2. Login with `atomic` user
 3. Navigate available modules:
    - **Overview**: System status and performance
    - **Containers**: Podman container management
