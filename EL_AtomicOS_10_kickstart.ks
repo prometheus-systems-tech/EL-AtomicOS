@@ -12,8 +12,7 @@ authselect select sssd
 selinux --enforcing
 firewall --enabled --ssh
 
-rootpw --iscrypted $6$rounds=4096$saltsalt$hash_here_replace_with_real_hash
-user --name=atomicos --password=$6$rounds=4096$saltsalt$hash_here_replace_with_real_hash --iscrypted --gecos="EL AtomicOS Admin" --groups=wheel,docker
+user --name=atomic --password=atomic --plaintext --gecos="EL AtomicOS Admin" --groups=wheel,docker
 
 clearpart --all --initlabel
 zerombr
