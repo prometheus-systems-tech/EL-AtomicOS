@@ -30,6 +30,9 @@ logvol /home --fstype=xfs --name=home --vgname=atomicos --size=5120
 logvol /tmp --fstype=xfs --name=tmp --vgname=atomicos --size=2048
 logvol swap --name=swap --vgname=atomicos --size=4096
 
+# OSTree setup - this is the key addition
+ostreesetup --osname=el-atomicos --remote=fedora --url=https://ostree.fedoraproject.org/atomic/ --ref=fedora/40/x86_64/atomic-host --nogpg
+
 %packages --excludedocs
 @core
 @standard
@@ -38,10 +41,20 @@ rpm-ostree
 ostree
 podman
 toolbox
+docker-ce
+docker-ce-cli
+containerd.io
+docker-buildx-plugin
+docker-compose-plugin
+kubernetes
+kubeadm
+kubelet
+kubectl
 systemd-resolved
 flatpak
 cockpit
 cockpit-podman
+cockpit-docker
 sudo
 vim-minimal
 curl
@@ -64,6 +77,10 @@ psmisc
 %end
 
 %post --log=/var/log/atomicos-kickstart.log
+# Initialize OSTree after installation
+ostree admin init-fs /sysroot
+ostree admin os-init el-atomicos
+
 systemctl enable rpm-ostreed
 systemctl enable ostree-remount.service
 systemctl enable NetworkManager
@@ -71,6 +88,9 @@ systemctl enable chronyd
 systemctl enable sshd
 systemctl enable cockpit.socket
 systemctl enable podman.socket
+systemctl enable docker
+systemctl enable containerd
+systemctl enable kubelet
 systemctl enable systemd-resolved
 systemctl enable podman-auto-update.timer
 systemctl disable postfix
@@ -95,6 +115,11 @@ EOF
 firewall-offline-cmd --add-service=cockpit
 firewall-offline-cmd --add-port=2376/tcp
 firewall-offline-cmd --add-port=8080/tcp
+firewall-offline-cmd --add-port=6443/tcp
+firewall-offline-cmd --add-port=10250/tcp
+firewall-offline-cmd --add-port=10251/tcp
+firewall-offline-cmd --add-port=10252/tcp
+firewall-offline-cmd --add-port=2379-2380/tcp
 
 cat > /etc/machine-info << EOF
 PRETTY_HOSTNAME="EL AtomicOS 10"
@@ -146,6 +171,28 @@ runtime = "crun"
 network_backend = "netavark"
 EOF
 
+# Configure Docker daemon
+mkdir -p /etc/docker
+cat > /etc/docker/daemon.json << 'EOF'
+{
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "log-driver": "journald",
+  "log-opts": {
+    "max-size": "100m"
+  },
+  "storage-driver": "overlay2"
+}
+EOF
+
+# Configure kubelet
+mkdir -p /etc/kubernetes
+cat > /etc/kubernetes/kubelet.conf << 'EOF'
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+cgroupDriver: systemd
+containerRuntimeEndpoint: unix:///var/run/containerd/containerd.sock
+EOF
+
 echo 'atomicos ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/atomicos
 
 mkdir -p /usr/share/doc/atomicos
@@ -157,7 +204,7 @@ compatible with RHEL 10 and its ecosystem clones.
 
 Key Features:
 - Immutable base system with atomic updates via rpm-ostree
-- Container-first approach with Podman
+- Container-first approach with Podman, Docker, and Kubernetes support
 - Web-based management via Cockpit
 - Enhanced security with SELinux enforcing
 - Optimized for cloud and edge deployments
@@ -169,12 +216,14 @@ cat > /etc/motd << 'EOF'
   ║                    EL AtomicOS 10                         ║
   ║        Enterprise Linux Atomic Operating System           ║
   ║                                                           ║
-  ║  Container-optimized • Immutable • Secure • Scalable      ║
+  ║ Container-optimized • Immutable • Secure • Scalable      ║
   ║                                                           ║
   ║  Web Management: https://$(hostname):9090                 ║
   ║  Documentation: /usr/share/doc/atomicos/                  ║
   ║                                                           ║
   ║  podman ps          - List running containers             ║
+  ║  docker ps          - List Docker containers              ║
+  ║  kubectl get pods   - List Kubernetes pods                ║
   ║  rpm-ostree status  - Show system status                  ║
   ║  rpm-ostree upgrade - Update system                       ║
   ║                                                           ║
