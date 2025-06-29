@@ -1,5 +1,3 @@
-# WORK IN PROGRESS - DON'T BELIEVE THIS WORKS
-
 # EL AtomicOS 10
 
 Enterprise Linux Atomic Operating System for RHEL 10 and compatible distributions.
