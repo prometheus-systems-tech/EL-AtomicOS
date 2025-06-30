@@ -21,22 +21,14 @@ bootloader --location=mbr --driveorder=sda --append="rhgb quiet"
 
 part /boot --fstype=ext4 --size=1024 --ondisk=sda
 part /boot/efi --fstype=efi --size=512 --ondisk=sda
-part pv.01 --size=1 --grow --ondisk=sda
-
-volgroup atomicos pv.01
-logvol / --fstype=xfs --name=root --vgname=atomicos --size=20480 --grow
-logvol /var --fstype=xfs --name=var --vgname=atomicos --size=10240
-logvol /home --fstype=xfs --name=home --vgname=atomicos --size=5120
-logvol /tmp --fstype=xfs --name=tmp --vgname=atomicos --size=2048
-logvol swap --name=swap --vgname=atomicos --size=4096
+part / --fstype=xfs --size=20480 --grow --ondisk=sda
+part swap --fstype=swap --size=4096 --ondisk=sda
 
 # OSTree setup - this is the key addition
 ostreesetup --osname=el-atomicos --remote=fedora --url=https://ostree.fedoraproject.org/atomic/ --ref=fedora/40/x86_64/atomic-host --nogpg
 
 %packages --excludedocs
 @core
-@standard
-@hardware-support
 rpm-ostree
 ostree
 podman
@@ -46,34 +38,14 @@ docker-ce-cli
 containerd.io
 docker-buildx-plugin
 docker-compose-plugin
+cockpit
+cockpit-podman
+cockpit-docker
 kubernetes
 kubeadm
 kubelet
 kubectl
 systemd-resolved
-flatpak
-cockpit
-cockpit-podman
-cockpit-docker
-sudo
-vim-minimal
-curl
-wget
-git
-crun
-runc
-conmon
-containers-common
-fail2ban
-auditd
-bind-utils
-nmap-ncat
-tcpdump
-htop
-iotop
-strace
-lsof
-psmisc
 %end
 
 %post --log=/var/log/atomicos-kickstart.log
