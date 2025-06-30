@@ -35,8 +35,9 @@ EL AtomicOS 10 is an immutable, container-focused operating system built on Ente
 - **Immutable Base System**: Core OS is read-only with atomic updates
 - **Container-First Design**: Optimized for Podman, Docker, and Kubernetes workloads with toolbox support
 - **Enterprise Linux Compatibility**: Works with RHEL 10 and all compatible distributions
-- **Web-Based Management**: Cockpit integration with Podman module for easy administration
-- **Enhanced Security**: SELinux enforcing, fail2ban, auditd, minimal attack surface
+- **Web-Based Management**: Cockpit admin interface with Podman and Docker modules for easy administration
+- **Kubernetes Support**: kubelet, kubeadm, kubectl included for cluster/node roles
+- **Docker Support**: Full Docker CLI and daemon support, including Compose and Buildx
 - **Atomic Updates**: System updates via rpm-ostree with rollback capability
 - **Cloud and Edge Ready**: Optimized for modern deployment scenarios
 
@@ -115,8 +116,8 @@ network --hostname=your-hostname
 user --name=atomic --password=$6$rounds=4096$saltsalt$your_generated_hash --iscrypted --gecos="EL AtomicOS Admin" --groups=wheel,docker
 
 # Modify partitioning if needed
-logvol / --size=50240  # Increase root partition
-logvol /var --size=20480  # Increase for container storage
+part / --fstype=xfs --size=50240 --grow --ondisk=sda  # Increase root partition
+part swap --fstype=swap --size=8192 --ondisk=sda      # Increase swap
 
 # OSTree configuration (update if using custom repository)
 ostreesetup --osname=el-atomicos --remote=fedora --url=https://ostree.fedoraproject.org/atomic/ --ref=fedora/40/x86_64/atomic-host --nogpg
@@ -125,12 +126,12 @@ ostreesetup --osname=el-atomicos --remote=fedora --url=https://ostree.fedoraproj
 ### 4. Installation Process
 
 The kickstart installation will:
-1. Partition disks with LVM (20GB root, 10GB /var, 5GB /home, 2GB /tmp, 4GB swap)
-2. Install core packages (@core, @standard, @hardware-support)
+1. Partition disks (Fedora CoreOS-style: XFS root, ext4 /boot, EFI, swap)
+2. Install core packages (@core, rpm-ostree, ostree, podman, toolbox, docker, cockpit, kubernetes)
 3. Set up OSTree with Fedora Atomic Host repository
 4. Configure container runtimes (Podman, Docker, containerd) and Kubernetes
 5. Enable services (Cockpit, NetworkManager, SSH, systemd-resolved, etc.)
-6. Apply security settings (SELinux enforcing, fail2ban, auditd)
+6. Apply security settings (SELinux enforcing)
 7. Create atomic user with sudo privileges
 8. Set system to multi-user target (no GUI)
 9. Reboot automatically
@@ -170,7 +171,9 @@ rpm-ostree status
 # Verify container runtime versions
 podman version
 docker version
-crun --version
+kubectl version
+kubeadm version
+kubelet --version
 
 # Check enabled services
 systemctl status cockpit.socket
@@ -182,10 +185,6 @@ systemctl status sshd
 systemctl status NetworkManager
 systemctl status chronyd
 systemctl status systemd-resolved
-
-# Verify security services
-systemctl status fail2ban
-systemctl status auditd
 
 # Check user privileges
 sudo whoami  # Should work without password prompt (NOPASSWD configured)
@@ -217,6 +216,7 @@ Open browser to: `https://el-atomicos:9090` (or your configured hostname)
   - **Overview**: System status and performance
   - **Podman**: Container management (via cockpit-podman)
   - **Docker**: Docker container management (via cockpit-docker)
+  - **Kubernetes**: Cluster/node management (kubectl, kubeadm)
   - **Services**: Systemd service control
   - **Terminal**: Web-based console
   - **Networking**: Network configuration
@@ -232,11 +232,9 @@ Open browser to: `https://el-atomicos:9090` (or your configured hostname)
 /                   # Immutable root filesystem (remounted read-only)
 ├── /boot           # Boot partition (ext4, 1024MB, mutable)
 ├── /boot/efi       # EFI partition (512MB, mutable)
-├── /var            # Variable data (XFS, 10GB, mutable)
+├── /var            # Variable data (XFS, mutable)
 │   ├── /var/lib/containers  # Container storage
 │   └── /var/log    # System logs (journald persistent)
-├── /home           # User data (XFS, 5GB, mutable)
-├── /tmp            # Temporary files (XFS, 2GB, mutable)
 ├── /etc            # Configuration overlay (mutable)
 ├── /usr/share/doc/atomicos  # EL AtomicOS documentation
 └── swap            # Swap space (4GB)
@@ -244,7 +242,7 @@ Open browser to: `https://el-atomicos:9090` (or your configured hostname)
 
 **Storage Details:**
 - Root filesystem uses OSTree for immutable base system
-- Container storage in /var/lib/containers with journald logging
+- Container storage in /var/lib/containers (Podman), /var/lib/docker (Docker)
 - Journal storage: max 1GB system, 100MB runtime, 1-month retention
 - All filesystems use XFS except /boot (ext4) and /boot/efi
 
@@ -255,16 +253,16 @@ Open browser to: `https://el-atomicos:9090` (or your configured hostname)
 │            User Applications            │
 ├─────────────────────────────────────────┤
 │              Containers                 │
-│   (Podman, Docker, Kubernetes)         │
+│   (Podman, Docker, Kubernetes)          │
 ├─────────────────────────────────────────┤
 │            Container Runtime            │
-│  (crun, runc, containerd, CRI-O)       │
+│  (crun, runc, containerd)               │
 ├─────────────────────────────────────────┤
 │          EL AtomicOS Services           │
-│   (Cockpit, rpm-ostree, fail2ban)      │
+│   (Cockpit, rpm-ostree)                 │
 ├─────────────────────────────────────────┤
 │         Enterprise Linux Base           │
-│    (OSTree + Standard EL packages)     │
+│    (OSTree + Standard EL packages)      │
 └─────────────────────────────────────────┘
 ```
 
@@ -279,267 +277,84 @@ Open browser to: `https://el-atomicos:9090` (or your configured hostname)
 - chronyd (time synchronization)
 - systemd-resolved (DNS resolution)
 - rpm-ostreed (system updates)
-- fail2ban (intrusion prevention)
-- auditd (security auditing)
 - podman-auto-update.timer (container updates)
 
-## Container Management
+## Container and Orchestration Management
 
 EL AtomicOS 10 supports multiple container runtimes and orchestration platforms:
 
-### Basic Podman Operations
+### Podman
 
 ```bash
-# Pull an image from a registry
+# Pull an image
 podman pull docker.io/library/httpd:latest
-
-# Run a container with port mapping
+# Run a container
 podman run -d --name web -p 8080:80 docker.io/library/httpd:latest
-
 # List running containers
 podman ps
-
-# List all containers (including stopped)
-podman ps -a
-
-# View container logs
-podman logs web
-
-# Execute command in running container
-podman exec -it web /bin/bash
-
-# Stop and remove container
-podman stop web
-podman rm web
-
-# Remove unused images
-podman image prune
 ```
 
-**Container Configuration:**
-- Podman runtime: crun (with runc as fallback)
-- Docker runtime: containerd
-- Kubernetes runtime: containerd via CRI
-- Logging: journald (configured in /etc/containers/containers.conf and /etc/docker/daemon.json)
-- Network: netavark (Podman), bridge (Docker)
-- Storage: /var/lib/containers (Podman), /var/lib/docker (Docker)
-- Process limit: 2048 per container
-
-### Basic Docker Operations
+### Docker
 
 ```bash
-# Pull an image from a registry
+# Pull an image
 docker pull httpd:latest
-
-# Run a container with port mapping
+# Run a container
 docker run -d --name web -p 8080:80 httpd:latest
-
 # List running containers
 docker ps
-
-# List all containers (including stopped)
-docker ps -a
-
-# View container logs
-docker logs web
-
-# Execute command in running container
-docker exec -it web /bin/bash
-
-# Stop and remove container
-docker stop web
-docker rm web
-
-# Remove unused images
-docker image prune
 ```
 
-### Basic Kubernetes Operations
+### Kubernetes
 
 ```bash
 # Check cluster status
 kubectl cluster-info
-
 # Get nodes
 kubectl get nodes
-
-# Get all pods in all namespaces
-kubectl get pods --all-namespaces
-
 # Create a deployment
 kubectl create deployment nginx --image=nginx
-
 # Expose a deployment as a service
 kubectl expose deployment nginx --port=80 --type=NodePort
-
-# Scale a deployment
-kubectl scale deployment nginx --replicas=3
-
-# Get services
-kubectl get services
-
-# View logs from a pod
-kubectl logs <pod-name>
-
-# Execute command in a pod
-kubectl exec -it <pod-name> -- /bin/bash
-
-# Delete a deployment
-kubectl delete deployment nginx
 ```
 
 **Kubernetes Configuration:**
 - Container runtime: containerd
-- Network plugin: Ready for CNI installation
-- kubelet service: Enabled and configured
+- kubelet, kubeadm, kubectl included
 - Required ports: 6443, 10250, 10251, 10252, 2379-2380 (opened in firewall)
 - Configuration: /etc/kubernetes/
 
 **Note:** Kubernetes cluster initialization requires additional setup after installation.
-
-### Container as Services
-
-**For Podman:**
-```bash
-# Generate systemd unit file
-podman generate systemd --new --files --name web
-
-# Move to system location
-sudo mv container-web.service /etc/systemd/system/
-
-# Enable and start
-sudo systemctl daemon-reload
-sudo systemctl enable --now container-web.service
-```
-
-**For Docker:**
-```bash
-# Create systemd service file for Docker container
-cat > /etc/systemd/system/docker-web.service << 'EOF'
-[Unit]
-Description=Web Container
-Requires=docker.service
-After=docker.service
-
-[Service]
-Restart=always
-ExecStart=/usr/bin/docker run --rm --name web -p 8080:80 httpd:latest
-ExecStop=/usr/bin/docker stop web
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Enable and start
-sudo systemctl daemon-reload
-sudo systemctl enable --now docker-web.service
-```
-
-### Container Auto-Updates
-
-The system includes automatic update capabilities for containers:
-
-**Podman Auto-Updates:**
-```bash
-# Check auto-update status
-systemctl status podman-auto-update.timer
-
-# Enable auto-update for a container (label required)
-podman run -d --label "io.containers.autoupdate=registry" --name web nginx
-
-# Manually trigger auto-update
-podman auto-update
-
-# View auto-update logs
-journalctl -u podman-auto-update.service
-```
-
-**Docker Auto-Updates:**
-```bash
-# Using Watchtower for Docker auto-updates
-docker run -d \
-  --name watchtower \
-  --restart unless-stopped \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  containrrr/watchtower
-
-# Check Watchtower status
-docker logs watchtower
-```
 
 ## System Updates and Maintenance
 
 ### Checking for Updates
 
 ```bash
-# Check current OSTree deployment status
 rpm-ostree status
-
-# Check for available updates from remote
 rpm-ostree upgrade --check
-
-# Preview what updates are available
-rpm-ostree upgrade --preview
-
-# View update configuration
-cat /etc/atomicos/update.conf
 ```
-
-**Update Configuration (in /etc/atomicos/update.conf):**
-- AUTO_UPDATE_ENABLED=false (disabled by default)
-- UPDATE_SCHEDULE="weekly"
-- REBOOT_STRATEGY="off"
-- UPDATE_GROUP="stable"
 
 ### Applying Updates
 
 ```bash
-# Download and stage updates
 sudo rpm-ostree upgrade
-
-# Reboot to apply updates
 sudo systemctl reboot
-
-# Verify update after reboot
-rpm-ostree status
 ```
 
 ### Rollback Support
 
 ```bash
-# View deployment history
-rpm-ostree status
-
-# Rollback to previous deployment
 sudo rpm-ostree rollback
-
-# Reboot to activate rollback
 sudo systemctl reboot
 ```
 
 ### Package Management
 
 ```bash
-# Install additional packages (creates new deployment)
 sudo rpm-ostree install htop tree
-
-# Remove packages (creates new deployment)
 sudo rpm-ostree uninstall htop tree
-
-# Search for packages in repositories
-rpm-ostree search package-name
-
-# Install from local RPM file
-sudo rpm-ostree install ./package.rpm
-
-# Reset to clean state (remove all layered packages)
-sudo rpm-ostree reset
-
-# View layered packages
-rpm-ostree status --verbose
 ```
-
-**Note:** Package changes require a reboot to take effect, as they create a new OSTree deployment.
 
 ## Web Management Interface
 
@@ -552,6 +367,7 @@ rpm-ostree status --verbose
    - **Overview**: System status, CPU, memory, disk usage
    - **Podman**: Container management via cockpit-podman module
    - **Docker**: Docker container management via cockpit-docker module
+   - **Kubernetes**: Cluster/node management (kubectl, kubeadm)
    - **Services**: Systemd service control and status
    - **Terminal**: Web-based console access
    - **Networking**: Network interface configuration
@@ -855,13 +671,24 @@ EOF
 **Docker Deployment Script:**
 ```bash
 # Create Docker deployment script
-cat > /opt/atomicos/bin/deploy-docker.sh << 'EOF'
-#!/bin/bash
-docker pull registry.company.com/app:latest
-docker stop app || true
-docker rm app || true
-docker run -d --name app -p 8080:8080 registry.company.com/app:latest
+cat > /etc/systemd/system/docker-web.service << 'EOF'
+[Unit]
+Description=Web Container
+Requires=docker.service
+After=docker.service
+
+[Service]
+Restart=always
+ExecStart=/usr/bin/docker run --rm --name web -p 8080:80 httpd:latest
+ExecStop=/usr/bin/docker stop web
+
+[Install]
+WantedBy=multi-user.target
 EOF
+
+# Enable and start
+sudo systemctl daemon-reload
+sudo systemctl enable --now docker-web.service
 ```
 
 **Kubernetes Deployment:**
@@ -937,19 +764,3 @@ kubectl delete pods --field-selector=status.phase==Failed
 - containerd used for Docker and Kubernetes
 - systemd cgroup manager configured for better integration
 - Kubernetes-ready with kubelet service enabled
-
----
-
-**EL AtomicOS 10** - Enterprise Linux Atomic Operating System  
-Compatible with RHEL 10, AlmaLinux 10, Rocky Linux 10, CentOS Stream 10, Oracle Linux 10, and other Enterprise Linux 10 derivatives
-
-**Key Technologies:**
-- OSTree for immutable system management
-- Podman for rootless container orchestration
-- Docker for traditional container workflows  
-- Kubernetes for container orchestration at scale
-- Cockpit for web-based administration
-- rpm-ostree for atomic system updates
-
-For the latest documentation and updates, visit:  
-`https://github.com/prometheus-systems-tech/EL-AtomicOS`
